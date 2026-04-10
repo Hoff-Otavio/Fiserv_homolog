@@ -55,12 +55,16 @@
 
 ### 1.1 Pagamento à vista — APROVADO
 
-| # | Bandeira | Valor | NSU e-SiTef | Order ID | Merchant USN | Status | Data |
-|---|---|---|---|---|---|---|---|
-| 1 | VISA | R$ 250,00 | 260410138563214 | 000000001 | 1 | `[x]` | 10/04/2026 |
-| 2 | MASTERCARD | R$ 250,00 | 260410138564154 | 000000004 | 4 | `[!]` | 10/04/2026 |
-| 3 | AMEX | R$ 250,00 | — | 000000005/006 | — | `[!]` | 10/04/2026 |
-| 4 | DINERS | R$ 250,00 | 260410138565254 | 000000007 | 7 | `[x]` | 10/04/2026 |
+| # | Bandeira | Número | Valor | NSU e-SiTef | Order ID | Merchant USN | Status | Data |
+|---|---|---|---|---|---|---|---|---|
+| 1 | VISA | `4000 0000 0000 0044` | R$ 250,00 | 260410138563214 | 000000001 | 1 | `[x]` | 10/04/2026 |
+| 2 | MASTERCARD | `5000 0000 0000 0001` | R$ 250,00 | 260410138564154 | 000000004 | 4 | `[!]` | 10/04/2026 |
+| 3 | AMEX | `3764 0000 0000 016` | R$ 250,00 | — | 000000005/006 | — | `[!]` | 10/04/2026 |
+| 4 | DINERS | `3634 5600 0000 01` | R$ 250,00 | 260410138565254 | 000000007 | 7 | `[x]` | 10/04/2026 |
+| 5 | HIPERCARD | `6062 8200 0000 001` | R$ 250,00 | 260410138572744 | 000000016 | 16 | `[x]` | 10/04/2026 |
+| 6 | ELO | `6362 9700 0045 7013` | R$ 250,00 | 260410138573084 | 000000017 | 17 | `[x]` | 10/04/2026 |
+| 7 | VISA (19 dígitos) | `4563 4700 0000 0000 004` | R$ 250,00 | 260410138573664 | 000000018 | 18 | `[x]` | 10/04/2026 |
+| 8 | MASTERCARD (19 dígitos) | `5390 0000 0000 0000 009` | R$ 250,00 | 260410138573714 | 000000019 | 19 | `[!]` | 10/04/2026 |
 
 **Fluxo esperado:** Pagamento processado → pedido com status "Aprovado" → fatura gerada automaticamente.
 
@@ -88,7 +92,21 @@
 
 ---
 
-### 1.4 Pagamento Parcelado (Opcional)
+### 1.2 Pagamento com Voucher — Alimentação / Refeição (Opcional)
+
+| # | Bandeira | Número | Valor | NSU e-SiTef | Order ID | Status | Data |
+|---|---|---|---|---|---|---|---|
+| 9 | SODEXO Cultura | `6060 7001 2476 5016` | R$ 250,00 | 260410138573744 | 000000020 | `[!]` | 10/04/2026 |
+| 10 | SODEXO Alimentação | `6033 8900 0000 0007` | R$ 250,00 | 260410138574724 | 000000022 | `[!]` | 10/04/2026 |
+| 11 | SODEXO Refeição | `6060 7133 3914 2012` | R$ 250,00 | 260410138574784 | 000000023 | `[!]` | 10/04/2026 |
+| 12 | ALELO Cultura | `5090 1600 0002 016` | R$ 250,00 | 260410138574794 | 000000024 | `[x]` | 10/04/2026 |
+| 13 | ALELO Refeição | `4058 7411 1111 1111 111` | R$ 250,00 | 260410138577574 | 000000025 | `[x]` | 10/04/2026 |
+
+> Vouchers SODEXO exigem **CPF: 581.935.914-37** no checkout.
+
+---
+
+### 1.3 Pagamento Parcelado (Opcional)
 
 | # | Descrição | Parcelas | Valor | NSU e-SiTef | Order ID | Status | Data |
 |---|---|---|---|---|---|---|---|
@@ -97,7 +115,7 @@
 
 ---
 
-### 1.5 Pré-autorização e Captura (Opcional)
+### 1.4 Pré-autorização e Captura (Opcional)
 
 | # | Descrição | Valor | NSU e-SiTef | Order ID | Status | Data |
 |---|---|---|---|---|---|---|
@@ -228,11 +246,12 @@
 | Bloco | Total | Concluídos | Parciais | Falhos | Pendentes |
 |---|---|---|---|---|---|
 | 1 — Cartão (obrigatórios) | 6 | 3 | 0 | 2 | 1 |
+| 1 — Vouchers | 5 | 0 | 0 | 1 | 4 |
 | 2 — Timeout / getStatus | 2 | 0 | 0 | 0 | 2 |
 | 3 — PIX | 4 | 1 | 2 | 1 | 0 |
 | 4 — Tokenização | 2 | 0 | 0 | 0 | 2 |
 | 5 — 3DS 2.0 | 4 | 0 | 0 | 0 | 4 |
-| **Total** | **18** | **4** | **2** | **3** | **9** |
+| **Total** | **23** | **4** | **2** | **4** | **13** |
 
 ---
 
@@ -274,6 +293,8 @@
 | BUG-004 | AMEX com `authorizer_id: "3"` inválido | Alta |
 | BUG-005 | Estorno de cartão usa NSU da pré-autorização em vez da captura | Alta |
 | BUG-006 | Cancel/estorno de PIX pendente falha no gateway | Alta |
+| BUG-007 | Máscara do campo de cartão trunca números com 19 dígitos para 16 | Alta |
+| BUG-008 | Vouchers SODEXO/ALELO rejeitados — authorizer_id incorreto para voucher | Alta |
 | — | getStatus sem retry de 3 tentativas (pendente implementação) | Alta |
 
 ---
@@ -338,6 +359,31 @@
   - **Order 000000013:** O cancel foi enviado ao gateway com o NSU correto (`260410138569670`), mas a API retornou `code 115 — "Authenticity error"`. Causa: o PIX foi aceito apenas no Magento (via invoice manual), mas o gateway ainda registrava a transação como `PEN`. A API Fiserv rejeita o cancel de transações não confirmadas no gateway.
 - **Arquivo afetado:** `Core/Plugin/OrderCancelPlugin.php` e `Core/Model/Core.php::doCancel()`
 - **Correção:** O fluxo de cancelamento de PIX precisa: (1) verificar o status real no gateway antes de tentar cancelar; (2) para PIX em `PEN`, usar o endpoint correto de cancelamento de PIX pendente (diferente do cancel de crédito aprovado).
+
+---
+
+### BUG-007 — Máscara do campo de cartão trunca números com 19 dígitos para 16
+- **Severidade:** Alta
+- **Teste:** #8 — MASTERCARD 19 dígitos
+- **Order ID:** 000000019 | **e-SiTef USN:** 260410138573714
+- **Descrição:** O campo de número do cartão no checkout trunca cartões de 19 dígitos para 16. No log, o cartão `5390 0000 0000 0000 009` foi enviado ao gateway como `539000******0000` (16 dígitos), perdendo os 3 últimos dígitos. Isso invalida o número do cartão enviado ao gateway.
+- **Arquivo afetado:** `Core/view/frontend/web/js/Masks.js` e/ou template do formulário de cartão — o `maxlength` do input provavelmente está fixado em 16.
+- **Correção:** O campo de número do cartão deve aceitar até 19 dígitos (`maxlength="19"`) e a máscara deve se adaptar ao comprimento detectado da bandeira.
+- **Nota:** Mesmo que corrigido, MASTERCARD ainda falharia via Rede (BUG-002). Ambos precisam ser resolvidos.
+
+---
+
+### BUG-008 — Vouchers SODEXO/ALELO rejeitados pelo adquirente BIN com "Emissor desconhecido"
+- **Severidade:** Alta
+- **Teste:** #9 — SODEXO Cultura
+- **Order ID:** 000000020 | **e-SiTef USN:** 260410138573744
+- **Descrição:** SODEXO Cultura (`6060 7001 2476 5016`) foi enviado ao adquirente BIN (`authorizer_id: "1"`), que retornou `code 134 — "Error on card query"` com `authorizer_code: 255 — "Emissor desconhecido"`. O BIN não reconhece cartões SODEXO como emissores válidos.
+- **Causa:** O módulo não possui `authorizer_id` específico para vouchers de alimentação/refeição (SODEXO, ALELO). Esses cartões exigem um adquirente/autorizador específico para vouchers, diferente do `authorizer_id: "1"` (BIN) usado para crédito/débito.
+- **Arquivo afetado:** `Core/Model/Custom/Payment.php` método `getAuthorizerId()` — sem mapeamento para prefixos de voucher.
+- **Correção:** Verificar junto à Fiserv quais `authorizer_id` correspondem aos adquirentes de voucher (SODEXO, ALELO) habilitados para este merchant, e mapear os BINs/prefixos corretos no método `getAuthorizerId()`.
+- **Impacto:** Todos os testes de voucher (SODEXO Cultura, Alimentação, Refeição; ALELO Cultura, Refeição) provavelmente falharão com o mesmo erro.
+- **Problema secundário — CPF não enviado:** O campo CPF no formulário de checkout só é exibido quando o módulo de antifraude está ativo (`antiFraud = true` em `CreditCard.js`, linha 37). Sem antifraude habilitado no admin, o campo CPF não é renderizado e, portanto, não é enviado ao gateway. Vouchers SODEXO/ALELO exigem CPF do portador. Mesmo corrigindo o `authorizer_id`, o pagamento pode ser rejeitado por ausência de CPF.
+  - **Arquivo afetado:** `Core/view/frontend/web/js/CreditCard.js` função `initCaratCardForm()` — o array `additional_info_needed` precisa incluir `cardholder_identification_type` e `cardholder_identification_number` para bandeiras de voucher independente do antifraude.
 
 ---
 
