@@ -157,7 +157,8 @@
 | # | Descrição | Valor | NSU e-SiTef | Order ID | Status | Data |
 |---|---|---|---|---|---|---|
 | 11 | Timeout + getStatus → transação **APROVADA** | R$ 255,00 (25500 centavos) | 260417139434730 | 000000028 | `[x]` | 17/04/2026 |
-| 12 | Timeout + getStatus → transação **NEGADA/CANCELADA** | R$ 10,00 (1000 centavos) | 260417139436770 | 000000034 | `[x]` | 17/04/2026 |
+| 12a | Transação **NEGADA** (R$ 22.000 — valor padrão Fiserv) | R$ 22.000,00 (2200000 centavos) | 260410138566284 | 000000009 | `[x]` | 10/04/2026 |
+| 12b | Timeout + getStatus → **NEGADA/CANCELADA** (via PIX) | R$ 10,00 (1000 centavos) | 260417139436770 | 000000034 | `[x]` | 17/04/2026 |
 
 **Fluxo esperado (caso 11):**
 1. Transação enviada → sem resposta (timeout de 60s)
@@ -180,6 +181,8 @@
 **Evidências:**
 
 ![getStatus APROVADO — Order 000000028 PEN→CON→Processando com fatura criada](certificacao/evidencias/10_pix_confirmado_getstatus_aprovado_magento.png)
+
+![Transação NEGADA — Order 000000009 R$ 22.000,00 Visa/Bin — portal e-SiTef](certificacao/evidencias/12_getstatus_negado_portal_esitef_r22000.png)
 
 ![getStatus NEGADO/CANCELADO — Order 000000034 PEN→EST→Cancelado](certificacao/evidencias/11_getstatus_cancelado_magento.png)
 
@@ -313,6 +316,7 @@
 | `09_cartao_negado_portal_esitef.png` | Cartão NEGADO — portal e-SiTef, Order 000000009 R$22.000,00 | 1.2 |
 | `10_pix_confirmado_getstatus_aprovado_magento.png` | PIX Confirmado + getStatus APROVADO — Order 000000028 PEN→CON | 3.1 / Bloco 2 |
 | `11_getstatus_cancelado_magento.png` | getStatus NEGADO — Order 000000034 PEN→EST→Cancelado | Bloco 2 |
+| `12_getstatus_negado_portal_esitef_r22000.png` | Transação NEGADA R$ 22.000 — portal e-SiTef, Order 000000009 | Bloco 2 / 1.2 |
 | `13_diners_aprovado_magento.png` | DINERS aprovado — histórico Magento, Order 000000007 | 1.1 |
 | `14_hipercard_aprovado_magento.png` | HIPERCARD aprovado — histórico Magento, Order 000000016 | 1.1 |
 | `15_elo_aprovado_magento.png` | ELO aprovado — histórico Magento, Order 000000017 | 1.1 |
