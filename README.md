@@ -434,15 +434,6 @@
 
 ---
 
-### BUG-011 — Cron não atualiza pedido PIX confirmado via portal (canCreditmemo() bloqueando)
-- **Severidade:** Alta
-- **Arquivo:** `Core/Model/Notifications/Topics/Payment.php` linha 199
-- **Descrição:** O método `updateStatusOrderById()` verificava `$order->canCreditmemo()` antes de chamar `updateStatusOrderByPayment()`. Pedidos PIX recém-criados são `pending/new` sem fatura — `canCreditmemo()` retorna `false` — então o cron detectava o status `CON` no gateway mas não criava a fatura nem atualizava o pedido no Magento.
-- **Correção aplicada:** Removida a condição `$order->canCreditmemo()` da linha 199. A verificação não faz sentido aqui — o propósito do método é precisamente criar a fatura quando o gateway confirma o pagamento.
-- **Impacto anterior:** PIX confirmado pelo painel e-SiTef ficava eternamente em `pending` no Magento.
-
----
-
 ### BUG-006 — Cancelamento/estorno de PIX falha com "Authenticity error"
 - **Severidade:** Alta
 - **Testes:** #8 — PIX Negado (orders 000000012, 000000013)
@@ -465,6 +456,20 @@
 
 ---
 
+### BUG-008 — Vouchers SODEXO/ALELO rejeitados pelo adquirente BIN com "Emissor desconhecido"
+- **Severidade:** Alta
+- **Teste:** #9 — SODEXO Cultura
+- **Order ID:** 000000020 | **e-SiTef USN:** 260410138573744
+- **Descrição:** SODEXO Cultura (`6060 7001 2476 5016`) foi enviado ao adquirente BIN (`authorizer_id: "1"`), que retornou `code 134 — "Error on card query"` com `authorizer_code: 255 — "Emissor desconhecido"`. O BIN não reconhece cartões SODEXO como emissores válidos.
+- **Causa:** O módulo não possui `authorizer_id` específico para vouchers de alimentação/refeição (SODEXO, ALELO). Esses cartões exigem um adquirente/autorizador específico para vouchers, diferente do `authorizer_id: "1"` (BIN) usado para crédito/débito.
+- **Arquivo afetado:** `Core/Model/Custom/Payment.php` método `getAuthorizerId()` — sem mapeamento para prefixos de voucher.
+- **Correção:** Verificar junto à Fiserv quais `authorizer_id` correspondem aos adquirentes de voucher (SODEXO, ALELO) habilitados para este merchant, e mapear os BINs/prefixos corretos no método `getAuthorizerId()`.
+- **Impacto:** Todos os testes de voucher (SODEXO Cultura, Alimentação, Refeição; ALELO Cultura, Refeição) provavelmente falharão com o mesmo erro.
+- **Problema secundário — CPF não enviado:** O campo CPF no formulário de checkout só é exibido quando o módulo de antifraude está ativo (`antiFraud = true` em `CreditCard.js`, linha 37). Sem antifraude habilitado no admin, o campo CPF não é renderizado e, portanto, não é enviado ao gateway. Vouchers SODEXO/ALELO exigem CPF do portador. Mesmo corrigindo o `authorizer_id`, o pagamento pode ser rejeitado por ausência de CPF.
+  - **Arquivo afetado:** `Core/view/frontend/web/js/CreditCard.js` função `initCaratCardForm()` — o array `additional_info_needed` precisa incluir `cardholder_identification_type` e `cardholder_identification_number` para bandeiras de voucher independente do antifraude.
+
+---
+
 ### BUG-009 — Campo CPF nunca renderizado no checkout (variável local em `caratLoadAdditionalInfo`)
 - **Severidade:** Alta
 - **Arquivo:** `Core/view/frontend/web/js/CreditCard.js` linha 280
@@ -484,17 +489,12 @@
 
 ---
 
-### BUG-008 — Vouchers SODEXO/ALELO rejeitados pelo adquirente BIN com "Emissor desconhecido"
+### BUG-011 — Cron não atualiza pedido PIX confirmado via portal (canCreditmemo() bloqueando)
 - **Severidade:** Alta
-- **Teste:** #9 — SODEXO Cultura
-- **Order ID:** 000000020 | **e-SiTef USN:** 260410138573744
-- **Descrição:** SODEXO Cultura (`6060 7001 2476 5016`) foi enviado ao adquirente BIN (`authorizer_id: "1"`), que retornou `code 134 — "Error on card query"` com `authorizer_code: 255 — "Emissor desconhecido"`. O BIN não reconhece cartões SODEXO como emissores válidos.
-- **Causa:** O módulo não possui `authorizer_id` específico para vouchers de alimentação/refeição (SODEXO, ALELO). Esses cartões exigem um adquirente/autorizador específico para vouchers, diferente do `authorizer_id: "1"` (BIN) usado para crédito/débito.
-- **Arquivo afetado:** `Core/Model/Custom/Payment.php` método `getAuthorizerId()` — sem mapeamento para prefixos de voucher.
-- **Correção:** Verificar junto à Fiserv quais `authorizer_id` correspondem aos adquirentes de voucher (SODEXO, ALELO) habilitados para este merchant, e mapear os BINs/prefixos corretos no método `getAuthorizerId()`.
-- **Impacto:** Todos os testes de voucher (SODEXO Cultura, Alimentação, Refeição; ALELO Cultura, Refeição) provavelmente falharão com o mesmo erro.
-- **Problema secundário — CPF não enviado:** O campo CPF no formulário de checkout só é exibido quando o módulo de antifraude está ativo (`antiFraud = true` em `CreditCard.js`, linha 37). Sem antifraude habilitado no admin, o campo CPF não é renderizado e, portanto, não é enviado ao gateway. Vouchers SODEXO/ALELO exigem CPF do portador. Mesmo corrigindo o `authorizer_id`, o pagamento pode ser rejeitado por ausência de CPF.
-  - **Arquivo afetado:** `Core/view/frontend/web/js/CreditCard.js` função `initCaratCardForm()` — o array `additional_info_needed` precisa incluir `cardholder_identification_type` e `cardholder_identification_number` para bandeiras de voucher independente do antifraude.
+- **Arquivo:** `Core/Model/Notifications/Topics/Payment.php` linha 199
+- **Descrição:** O método `updateStatusOrderById()` verificava `$order->canCreditmemo()` antes de chamar `updateStatusOrderByPayment()`. Pedidos PIX recém-criados são `pending/new` sem fatura — `canCreditmemo()` retorna `false` — então o cron detectava o status `CON` no gateway mas não criava a fatura nem atualizava o pedido no Magento.
+- **Correção aplicada:** Removida a condição `$order->canCreditmemo()` da linha 199. A verificação não faz sentido aqui — o propósito do método é precisamente criar a fatura quando o gateway confirma o pagamento.
+- **Impacto anterior:** PIX confirmado pelo painel e-SiTef ficava eternamente em `pending` no Magento.
 
 ---
 
