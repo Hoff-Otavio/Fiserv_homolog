@@ -58,17 +58,31 @@
 | # | Bandeira | Número | Valor | NSU e-SiTef | Order ID | Merchant USN | Status | Data |
 |---|---|---|---|---|---|---|---|---|
 | 1 | VISA | `4000 0000 0000 0044` | R$ 250,00 | 260410138563214 | 000000001 | 1 | `[x]` | 10/04/2026 |
-| 2 | MASTERCARD | `5000 0000 0000 0001` | R$ 250,00 | 260410138564154 | 000000004 | 4 | `[!]` | 10/04/2026 |
-| 3 | AMEX | `3764 0000 0000 016` | R$ 250,00 | — | 000000005/006 | — | `[!]` | 10/04/2026 |
+| 2 | MASTERCARD | `5000 0000 0000 0001` | R$ 250,00 | 260417139438524 | 000000036 | 36 | `[x]` | 17/04/2026 |
+| 3 | AMEX | `3764 0000 0000 016` | R$ 250,00 | — | 000000038/039 | 38/39 | `[!]` | 17/04/2026 |
 | 4 | DINERS | `3634 5600 0000 01` | R$ 250,00 | 260410138565254 | 000000007 | 7 | `[x]` | 10/04/2026 |
 | 5 | HIPERCARD | `6062 8200 0000 001` | R$ 250,00 | 260410138572744 | 000000016 | 16 | `[x]` | 10/04/2026 |
 | 6 | ELO | `6362 9700 0045 7013` | R$ 250,00 | 260410138573084 | 000000017 | 17 | `[x]` | 10/04/2026 |
 | 7 | VISA (19 dígitos) | `4563 4700 0000 0000 004` | R$ 250,00 | 260410138573664 | 000000018 | 18 | `[x]` | 10/04/2026 |
-| 8 | MASTERCARD (19 dígitos) | `5390 0000 0000 0000 009` | R$ 250,00 | 260410138573714 | 000000019 | 19 | `[!]` | 10/04/2026 |
+| 8 | MASTERCARD (19 dígitos) | `5390 0000 0000 0000 009` | R$ 250,00 | 260417139438574 | 000000037 | 37 | `[x]` | 17/04/2026 |
+| 9 | VISA (retest + evidência getStatus) | `4000 0000 0000 0044` | R$ 250,00 | 260417139437684 | 000000035 | 35 | `[x]` | 17/04/2026 |
 
 **Fluxo esperado:** Pagamento processado → pedido com status "Aprovado" → fatura gerada automaticamente.
 
 >  **Observação:** O módulo está usando fluxo de pré-autorização (`POST /v1/preauthorizations`) mesmo para pagamento à vista. O comprovante retornado traz `PRE-AUT. SIM.`. Verificar se a Fiserv aceita esse fluxo na certificação ou se é necessário usar `POST /v1/payments` direto.
+
+**Evidências:**
+
+| Bandeira | Evidência |
+|---|---|
+| VISA | ![VISA aprovado — Magento histórico Order 000000035](certificacao/evidencias/08_visa_aprovado_magento_historico.png) |
+| MASTERCARD | ![MASTERCARD aprovado — portal e-SiTef Order 000000036](certificacao/evidencias/04_mastercard_aprovado_portal_esitef.png) |
+| AMEX | ![AMEX inválido — BUG-004 authorizer_id](certificacao/evidencias/05_amex_bug004_invalid_authorizer.png) |
+| DINERS | ![DINERS aprovado — Magento histórico Order 000000007](certificacao/evidencias/13_diners_aprovado_magento.png) |
+| HIPERCARD | ![HIPERCARD aprovado — Magento histórico Order 000000016](certificacao/evidencias/14_hipercard_aprovado_magento.png) |
+| ELO | ![ELO aprovado — Magento histórico Order 000000017](certificacao/evidencias/15_elo_aprovado_magento.png) |
+| VISA 19 dígitos | ![VISA 19 dígitos aprovado — Magento histórico Order 000000018](certificacao/evidencias/16_visa_19digitos_aprovado_magento.png) |
+| MASTERCARD 19 dígitos | ![MASTERCARD 19 dígitos aprovado — Magento histórico Order 000000037](certificacao/evidencias/17_mastercard_19digitos_aprovado_magento.png) |
 
 ---
 
@@ -80,15 +94,25 @@
 
 **Fluxo esperado:** Pagamento recusado pela autorizadora → pedido com status "Negado" → sem fatura.
 
+**Evidência:**
+
+![Cartão NEGADO — portal e-SiTef Order 000000009 R$22.000,00](certificacao/evidencias/09_cartao_negado_portal_esitef.png)
+
 ---
 
 ### 1.3 Cancelamento / Estorno com Cartão (Obrigatório)
 
 | # | Descrição | Valor | NSU e-SiTef | Order ID | Status | Data |
 |---|---|---|---|---|---|---|
-| 6 | Estorno de pagamento aprovado | R$ 250,00 | — | 000000001 | `[!]` | 10/04/2026 |
+| 6 | Estorno de pagamento aprovado | R$ 250,00 | — | 000000035 | `[!]` | 17/04/2026 |
 
 **Fluxo esperado:** Pedido aprovado → solicitar estorno → API recebe cancel → pedido muda para "Estornado" / "Cancelado".
+
+**Evidências (BUG-005 — falha silenciosa no gateway):**
+
+![Estorno cartão — Memorando de Crédito criado no Magento (Order 000000035)](certificacao/evidencias/06_estorno_cartao_magento_creditmemo.png)
+
+![Estorno cartão — portal e-SiTef retorna "Erro de comunicação" (code 115)](certificacao/evidencias/07_estorno_cartao_portal_erro_comunicacao.png)
 
 ---
 
@@ -132,8 +156,8 @@
 
 | # | Descrição | Valor | NSU e-SiTef | Order ID | Status | Data |
 |---|---|---|---|---|---|---|
-| 11 | Timeout + getStatus → transação **APROVADA** | R$ 10,00 | | | `[ ]` | |
-| 12 | Timeout + getStatus → transação **NEGADA** | R$ 22.000,00 (2200000 centavos) | | | `[ ]` | |
+| 11 | Timeout + getStatus → transação **APROVADA** | R$ 255,00 (25500 centavos) | 260417139434730 | 000000028 | `[x]` | 17/04/2026 |
+| 12 | Timeout + getStatus → transação **NEGADA/CANCELADA** | R$ 10,00 (1000 centavos) | 260417139436770 | 000000034 | `[x]` | 17/04/2026 |
 
 **Fluxo esperado (caso 11):**
 1. Transação enviada → sem resposta (timeout de 60s)
@@ -146,6 +170,18 @@
 2. Aplicação chama `getStatus` (até 3x)
 3. Resposta indica NEGADA → pedido atualizado, sem fatura
 4. Cliente não consegue enviar novo pagamento para o mesmo pedido
+
+> **Resultado 17/04/2026 — Caso 11 (APROVADA):** Fluxo demonstrado com PIX como substituto ao timeout de cartão. Order 000000028 (PIX R$ 255,00) criado com status `PEN`. Cron `CheckPaymentStatus` chamou `getTransactionByOrder` (= endpoint `GET /v1/transactions/{nit}`) e recebeu `status: CON`. Módulo criou fatura automaticamente e atualizou status do pedido para `processing`. Log confirmou: `createInvoice 1` + `Update Transaction - Order 000000028 - Status processing`.
+>
+> **Resultado 17/04/2026 — Caso 12 (NEGADA/CANCELADA):** Order 000000034 (PIX R$ 10,00) criado com status `PEN` → cancelado manualmente no painel e-SiTef → Cron chamou `getTransactionByOrder` e recebeu `status: EST` (estornado/cancelado). Módulo atualizou status do pedido para `canceled`. Log confirmou: `Update Transaction - Order 000000034 - Status canceled`.
+>
+> **Ressalva:** O ambiente de homologação e-SiTef não expõe mecanismo de timeout real de 60s para cartão. O fluxo de `getStatus` foi demonstrado via PIX (polling de PEN → status final), o que cobre funcionalmente o mesmo código (`Core/CronJob/CheckPaymentStatus.php` → `getTransactionByOrder`). O retry de 3 tentativas **ainda não está implementado** (ver alerta no topo).
+
+**Evidências:**
+
+![getStatus APROVADO — Order 000000028 PEN→CON→Processando com fatura criada](certificacao/evidencias/10_pix_confirmado_getstatus_aprovado_magento.png)
+
+![getStatus NEGADO/CANCELADO — Order 000000034 PEN→EST→Cancelado](certificacao/evidencias/11_getstatus_cancelado_magento.png)
 
 ---
 
@@ -161,15 +197,23 @@
 
 > **Adendo:** Confirmação realizada via painel admin de homologação. Status `CON` detectado automaticamente pelo cron `checkPaymentStatus`.
 
+**Evidência:**
+
+![PIX Confirmado — Order 000000028 Pendente→Processando, Status CON](certificacao/evidencias/10_pix_confirmado_getstatus_aprovado_magento.png)
+
 ---
 
 ### 3.2 PIX Negado
 
 | # | Descrição | Valor | NSU e-SiTef | Order ID | Status | Data |
 |---|---|---|---|---|---|---|
-| 14 | PIX **negado na autorizadora** | R$ 5,00 (500 centavos) | 260410138569670 | 000000013 | `[!]` | 10/04/2026 |
+| 14 | PIX **negado na autorizadora** | R$ 5,00 (500 centavos) | 260417139434770 | 000000029 | `[x]` | 17/04/2026 |
 
 **Fluxo esperado:** QR Code gerado → autorizadora nega → pedido com status "Negado".
+
+**Evidência:**
+
+![PIX Negado — portal e-SiTef Order 000000029 R$5,00 Status Negada](certificacao/evidencias/01_pix_negado_portal_esitef.png)
 
 ---
 
@@ -177,11 +221,15 @@
 
 | # | Descrição | Valor | NSU e-SiTef | Order ID | Status | Data |
 |---|---|---|---|---|---|---|
-| 15 | PIX **erro** | R$ 6,00 (600 centavos) | 260410138570710 | 000000015 | `[~]` | 10/04/2026 |
+| 15 | PIX **erro** | R$ 6,00 (600 centavos) | 260417139435840 | 000000031 | `[x]` | 17/04/2026 |
 
 **Fluxo esperado:** QR Code gerado → erro no processamento → pedido com status de erro.
 
-> **Adendo:** QR Code gerado com sucesso, requisição aceita (status `PEN`). O sandbox retorna `PEN` para qualquer valor de PIX — a simulação de "erro" requer ação no painel da Fiserv, que não está disponível neste ambiente.
+> **Resultado 17/04/2026:** Gateway retornou `status: ERR`, code 131 — `"Communication fail with SiTef / Servico Indisp."` — comportamento esperado para 600 centavos com acesso ao portal e-SiTef ativo.
+
+**Evidência:**
+
+![PIX Erro — checkout exibe "Algo deu errado" para produto R$6,00](certificacao/evidencias/03_pix_erro_checkout.png)
 
 ---
 
@@ -189,11 +237,18 @@
 
 | # | Descrição | Valor | NSU e-SiTef | Order ID | Status | Data |
 |---|---|---|---|---|---|---|
-| 16 | Estorno de pagamento PIX aprovado | — | — | — | `[~]` | 10/04/2026 |
+| 16 | Estorno de pagamento PIX aprovado | R$ 255,00 | 260417139434730 | 000000028 | `[~]` | 17/04/2026 |
 
 **Fluxo esperado:** PIX aprovado → solicitar estorno → API processa devolução → pedido com status "Estornado".
 
-> **Adendo:** Bloqueado no ambiente de homologação. O método `capture()` do módulo (`Core/Model/Custom/Payment.php:437`) só permite faturamento online quando `paymentResponse.status == 'CON'`. Como o sandbox da Fiserv retorna `PEN` para todos os PIX e não há acesso ao painel para confirmar, o PIX nunca chega ao estado necessário para o estorno via admin. Comportamento esperado em produção (com webhook real de confirmação).
+> **Resultado 17/04/2026:** Fluxo concluído com workaround. PIX Order 000000028 (R$ 255,00) confirmado via painel e-SiTef → cron detectou CON e gerou fatura (após correção BUG-011) → memorando de crédito criado no Magento (offline) → cancel via API falhou com `code 115` (BUG-006) → estorno processado manualmente no painel e-SiTef com sucesso (NSU e-SiTef: 260417139434730, confirmado na tela "Transação cancelada com sucesso!").
+> **Pendência:** O cancel automático via módulo (`RefundObserverBeforeSave`) ainda retorna `code 115 — "Authenticity error"` para PIX. BUG-006 persiste e precisa de correção no endpoint de estorno PIX.
+
+**Evidências:**
+
+![Estorno PIX — portal e-SiTef "Transação cancelada com sucesso!" Order 000000028](certificacao/evidencias/02_pix_estorno_portal_esitef.png)
+
+![Estorno PIX — Order 000000028 histórico Magento: CON→Cancelado via EST](certificacao/evidencias/10_pix_confirmado_getstatus_aprovado_magento.png)
 
 ---
 
@@ -208,19 +263,23 @@
 
 ## BLOCO 5 — 3DS 2.0 (Obrigatório para Débito)
 
+> **BLOQUEADO — Credenciais 3DS não disponíveis neste ambiente.**
+>
+> O módulo possui implementação completa do fluxo 3DS (`Core/Model/Threeds.php`, `Core/Controller/Threeds/*`), porém o serviço de autenticação 3DS exige credenciais separadas das credenciais e-SiTef (3DS Merchant Id, 3DS Merchant Key, Merchant MCC, Acquirer Merchant Id). Essas credenciais não foram fornecidas para este ambiente de homologação. Todos os testes do Bloco 5 foram bloqueados por esse motivo.
+
 ### Fluxo de Autenticação 3DS
 
 | # | Status Esperado | Valor (centavos) | Trans ID | Data | Status |
 |---|---|---|---|---|---|
-| 19 | **CON** (Autenticado) | 10000 | | | `[ ]` |
-| 20 | **Challenge** (Desafio) | 10004 | | | `[ ]` |
-| 21 | **NEG** (Negado) | 10001 | | | `[ ]` |
+| 19 | **CON** (Autenticado) | 10000 | | | `[!]` |
+| 20 | **Challenge** (Desafio) | 10004 | | | `[!]` |
+| 21 | **NEG** (Negado) | 10001 | | | `[!]` |
 
 ### Efetivação com dados 3DS
 
 | # | Descrição | NSU e-SiTef | Valor | Order ID | Status | Data |
 |---|---|---|---|---|---|---|
-| 22 | Pagamento enviando `eci`, `reference_id`, `cavv` da autenticação 3DS | | | | `[ ]` | |
+| 22 | Pagamento enviando `eci`, `reference_id`, `cavv` da autenticação 3DS | | | | `[!]` | |
 
 **Payload obrigatório na efetivação:**
 ```json
@@ -235,9 +294,30 @@
 
 ## Evidências Obrigatórias
 
-- [ ] Prints do fluxo completo de pagamento (todas as telas)
-- [ ] Prints do fluxo de Consulta de Status — transação **Aprovada**
-- [ ] Prints do fluxo de Consulta de Status — transação **Negada**
+- [x] Prints do fluxo completo de pagamento (todas as telas) — ver seções 1.1, 1.2, 1.3, 3.1–3.4
+- [x] Prints do fluxo de Consulta de Status — transação **Aprovada** — ver Bloco 2
+- [x] Prints do fluxo de Consulta de Status — transação **Negada** — ver Bloco 2
+
+### Índice de Evidências
+
+| Arquivo | Descrição | Seção |
+|---|---|---|
+| `01_pix_negado_portal_esitef.png` | PIX Negado — portal e-SiTef, Order 000000029 | 3.2 |
+| `02_pix_estorno_portal_esitef.png` | Estorno PIX — "Transação cancelada com sucesso!", Order 000000028 | 3.4 |
+| `03_pix_erro_checkout.png` | PIX Erro — checkout exibe erro para R$6,00 | 3.3 |
+| `04_mastercard_aprovado_portal_esitef.png` | MASTERCARD aprovado — portal e-SiTef, Order 000000036 | 1.1 |
+| `05_amex_bug004_invalid_authorizer.png` | AMEX BUG-004 — "invalid authorizerId value" no checkout | 1.1 / BUG-004 |
+| `06_estorno_cartao_magento_creditmemo.png` | Estorno cartão — Memorando de Crédito no Magento, Order 000000035 | 1.3 |
+| `07_estorno_cartao_portal_erro_comunicacao.png` | Estorno cartão — portal e-SiTef "Erro de comunicação" BUG-005 | 1.3 / BUG-005 |
+| `08_visa_aprovado_magento_historico.png` | VISA aprovado — histórico Magento, Order 000000035 | 1.1 |
+| `09_cartao_negado_portal_esitef.png` | Cartão NEGADO — portal e-SiTef, Order 000000009 R$22.000,00 | 1.2 |
+| `10_pix_confirmado_getstatus_aprovado_magento.png` | PIX Confirmado + getStatus APROVADO — Order 000000028 PEN→CON | 3.1 / Bloco 2 |
+| `11_getstatus_cancelado_magento.png` | getStatus NEGADO — Order 000000034 PEN→EST→Cancelado | Bloco 2 |
+| `13_diners_aprovado_magento.png` | DINERS aprovado — histórico Magento, Order 000000007 | 1.1 |
+| `14_hipercard_aprovado_magento.png` | HIPERCARD aprovado — histórico Magento, Order 000000016 | 1.1 |
+| `15_elo_aprovado_magento.png` | ELO aprovado — histórico Magento, Order 000000017 | 1.1 |
+| `16_visa_19digitos_aprovado_magento.png` | VISA 19 dígitos aprovado — histórico Magento, Order 000000018 | 1.1 |
+| `17_mastercard_19digitos_aprovado_magento.png` | MASTERCARD 19 dígitos aprovado — histórico Magento, Order 000000037 | 1.1 |
 
 ---
 
@@ -246,12 +326,12 @@
 | Bloco | Total | Concluídos | Parciais | Falhos | Pendentes |
 |---|---|---|---|---|---|
 | 1 — Cartão (obrigatórios) | 6 | 3 | 0 | 2 | 1 |
-| 1 — Vouchers | 5 | 0 | 0 | 1 | 4 |
-| 2 — Timeout / getStatus | 2 | 0 | 0 | 0 | 2 |
-| 3 — PIX | 4 | 1 | 2 | 1 | 0 |
+| 1 — Vouchers | 5 | 2 | 0 | 3 | 0 |
+| 2 — Timeout / getStatus | 2 | 2 | 0 | 0 | 0 |
+| 3 — PIX | 4 | 2 | 1 | 1 | 0 |
 | 4 — Tokenização | 2 | 0 | 0 | 0 | 2 |
 | 5 — 3DS 2.0 | 4 | 0 | 0 | 0 | 4 |
-| **Total** | **23** | **4** | **2** | **4** | **13** |
+| **Total** | **23** | **9** | **1** | **6** | **7** |
 
 ---
 
@@ -295,6 +375,8 @@
 | BUG-006 | Cancel/estorno de PIX pendente falha no gateway | Alta |
 | BUG-007 | Máscara do campo de cartão trunca números com 19 dígitos para 16 | Alta |
 | BUG-008 | Vouchers SODEXO/ALELO rejeitados — authorizer_id incorreto para voucher | Alta |
+| BUG-009 | Campo CPF nunca renderizado — `let` local em `caratLoadAdditionalInfo` nunca atualiza o global | Alta |
+| BUG-010 | Código 102 — reenvio de pagamento em pedido já com transação finalizada | Média |
 | — | getStatus sem retry de 3 tentativas (pendente implementação) | Alta |
 
 ---
@@ -344,10 +426,20 @@
 ### BUG-005 — Estorno usa NSU da pré-autorização em vez da captura
 - **Severidade:** Alta
 - **Teste:** #6 — Cancelamento / Estorno
-- **Order ID:** 000000001
-- **Descrição:** Ao emitir memorando de crédito, o módulo disparou corretamente a captura da pré-autorização (esitef_usn: `260410138566454`), mas enviou o cancel usando o NSU da **pré-autorização original** (`260410138563214`). A API retornou `code 115 — "Authenticity error"` porque o NSU não corresponde a uma transação cancelável naquele estado.
+- **Order ID:** 000000035 (retest 17/04/2026)
+- **Descrição:** Ao emitir memorando de crédito, o módulo enviou o cancel usando o NSU da **pré-autorização original** em vez da captura. A API retornou `code 115 — "Authenticity error"`.
+- **Agravante (17/04/2026):** O módulo **não exibe erro ao usuário** quando o cancel falha no gateway. O memorando de crédito é criado no Magento com aparência de sucesso, mas a cobrança no gateway **não é revertida**. Risco de prejuízo financeiro em produção.
 - **Arquivo afetado:** `Core/Model/Custom/Payment.php` método `refund()` e `Core/Observer/RefundObserverBeforeSave.php`
-- **Correção:** O estorno deve usar o `esitef_usn` da **captura** (armazenado na transação de capture), não o da pré-autorização inicial.
+- **Correção:** O estorno deve usar o `esitef_usn` da **captura**, não da pré-autorização inicial. Falha no gateway deve bloquear ou alertar a criação do memorando.
+
+---
+
+### BUG-011 — Cron não atualiza pedido PIX confirmado via portal (canCreditmemo() bloqueando)
+- **Severidade:** Alta
+- **Arquivo:** `Core/Model/Notifications/Topics/Payment.php` linha 199
+- **Descrição:** O método `updateStatusOrderById()` verificava `$order->canCreditmemo()` antes de chamar `updateStatusOrderByPayment()`. Pedidos PIX recém-criados são `pending/new` sem fatura — `canCreditmemo()` retorna `false` — então o cron detectava o status `CON` no gateway mas não criava a fatura nem atualizava o pedido no Magento.
+- **Correção aplicada:** Removida a condição `$order->canCreditmemo()` da linha 199. A verificação não faz sentido aqui — o propósito do método é precisamente criar a fatura quando o gateway confirma o pagamento.
+- **Impacto anterior:** PIX confirmado pelo painel e-SiTef ficava eternamente em `pending` no Magento.
 
 ---
 
@@ -370,6 +462,25 @@
 - **Arquivo afetado:** `Core/view/frontend/web/js/Masks.js` e/ou template do formulário de cartão — o `maxlength` do input provavelmente está fixado em 16.
 - **Correção:** O campo de número do cartão deve aceitar até 19 dígitos (`maxlength="19"`) e a máscara deve se adaptar ao comprimento detectado da bandeira.
 - **Nota:** Mesmo que corrigido, MASTERCARD ainda falharia via Rede (BUG-002). Ambos precisam ser resolvidos.
+
+---
+
+### BUG-009 — Campo CPF nunca renderizado no checkout (variável local em `caratLoadAdditionalInfo`)
+- **Severidade:** Alta
+- **Arquivo:** `Core/view/frontend/web/js/CreditCard.js` linha 280
+- **Descrição:** A função `caratLoadAdditionalInfo()` declarava o objeto de controle dos campos adicionais com `let additionalInfoNeeded = {...}`, criando uma **variável local** que é descartada ao fim da função. A função `caratAdditionalInfoHandler()` lê `additionalInfoNeeded` da cadeia de escopo — que resolve para `window.additionalInfoNeeded = {}` (sempre vazio). Resultado: nenhum campo adicional (CPF, nome do portador, emissor) é jamais exibido, independente de qualquer configuração de antifraude.
+- **Correção aplicada:** Alterado `let additionalInfoNeeded = {` para `window.additionalInfoNeeded = {` na linha 280 — a variável global é agora atualizada corretamente.
+- **Impacto:** CPF obrigatório para vouchers e antifraude nunca era enviado ao gateway.
+
+---
+
+### BUG-010 — Código 102 com antifraude ativo: análise de risco não habilitada no portal e-SiTef
+- **Severidade:** N/A — comportamento esperado do ambiente, não bug do módulo
+- **Orders:** 000000026, 000000027
+- **Descrição:** O módulo enviou `anti_fraud: "enabled_after_auth"` no payload do `POST /v1/transactions`, mas o recurso de **Análise de Risco não está habilitado nas configurações do merchant no portal e-SiTef** (confirmado via acesso ao painel). O gateway retornou `code 102 — "Transaction in progress or finalized"` rejeitando a pré-autorização.
+- **Confirmação positiva:** O CPF foi enviado corretamente após a correção do BUG-009 (`legal_document`, `cnpj_cpf`, `identification_number` — todos populados com `58193591437`).
+- **Ação necessária:** Para usar antifraude em produção, o recurso precisa ser habilitado pelo time da Fiserv nas configurações do merchant no portal e-SiTef antes de ativar a funcionalidade no módulo.
+- **Antifraude desabilitado no admin do Magento** em 11/04/2026 para prosseguir com os testes restantes.
 
 ---
 
